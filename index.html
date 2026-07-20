@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ledger</title>
+<meta name="theme-color" content="#0a0c14" />
+<meta name="description" content="Personal finance tracker" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0c14; }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ---------- design tokens ---------- */
+const T = {
+  bg: "#0a0c14",
+  surface: "#12141f",
+  raised: "#191c2b",
+  line: "#232738",
+  lineSoft: "#1c2030",
+  text: "#eef0f6",
+  dim: "#9aa1b5",
+  faint: "#5d6478",
+  indigo: "#818cf8",
+  indigoDeep: "#4f46e5",
+  violet: "#8b5cf6",
+  green: "#4ade80",
+  red: "#fb7185",
+};
+
+const GRAD = "linear-gradient(135deg, #4338ca 0%, #6d28d9 55%, #7c3aed 100%)";
+const SANS = "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif";
+const DISPLAY = "'Space Grotesk', 'Inter', -apple-system, sans-serif";
+
+/* category colors — every entry carries its category's color */
+const CAT_COLORS = {
+  "Food": "#fbbf24",
+  "Transport": "#38bdf8",
+  "Data & Airtime": "#a78bfa",
+  "Rent & Utilities": "#f472b6",
+  "Business": "#818cf8",
+  "Health & Gym": "#34d399",
+  "Personal": "#fb923c",
+  "Wages": "#4ade80",
+  "Freelance": "#22d3ee",
+  "Other": "#94a3b8",
+};
+const catColor = (c) => CAT_COLORS[c] || "#94a3b8";
+
+const EXPENSE_CATS = ["Food", "Transport", "Data & Airtime", "Rent & Utilities", "Business", "Health & Gym", "Personal", "Other"];
+const INCOME_CATS = ["Wages", "Freelance", "Business", "Other"];
+
+const STORAGE_KEY = "ledger-data-v1";
+
+/* ---------- helpers ---------- */
+const fmt = (n) =>
+  "GH₵ " + Number(n).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const fmtShort = (n) => {
+  const v = Number(n);
+  if (Math.abs(v) >= 1000) return "GH₵ " + (v / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  return "GH₵ " + v.toFixed(0);
+};
+
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+const monthKey = (iso) => iso.slice(0, 7);
+
+const niceDate = (iso) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+};
+
+const monthName = (key) => {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+};
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+const NUM = { fontVariantNumeric: "tabular-nums" };
+
+/* ---------- motion primitives ---------- */
+const reducedMotion = () =>
+  typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* animates a number toward its target with an ease-out curve */
+function useCountUp(value, dur = 900) {
+  const [display, setDisplay] = useState(value);
+  const prev = useRef(value);
+  useEffect(() => {
+    if (reducedMotion()) { prev.current = value; setDisplay(value); return; }
+    const from = prev.current;
+    const to = value;
+    if (from === to) return;
+    const start = performance.now();
+    let raf;
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / dur);
+      const e = 1 - Math.pow(1 - p, 3);
+      setDisplay(from + (to - from) * e);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else prev.current = to;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, dur]);
+  return display;
+}
+
+/* true one frame after mount — lets rings and bars sweep in from zero */
+function useMounted() {
+  const [m, setM] = useState(reducedMotion());
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setM(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return m;
+}
+
+/* circular progress ring */
+function Ring({ pct, size = 52, stroke = 5, color, children }) {
+  const mounted = useMounted();
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const clamped = mounted ? Math.min(100, Math.max(0, pct)) : 0;
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)", display: "block" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#1c2030" strokeWidth={stroke} />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={color} strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={circ * (1 - clamped / 100)}
+          style={{ transition: "stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1), stroke 0.3s" }}
+        />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- root ---------- */
+function Ledger() {
+  const [view, setView] = useState("dash");
+  const [data, setData] = useState({ tx: [], budgets: {}, goals: [] });
+  const [loaded, setLoaded] = useState(false);
+  const [sheet, setSheet] = useState(null);
+  const saveTimer = useRef(null);
+
+  /* load from the phone's local storage */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setData(JSON.parse(raw));
+    } catch (e) {
+      /* first run — start fresh */
+    }
+    setLoaded(true);
+  }, []);
+
+  /* save (debounced, guarded) */
+  useEffect(() => {
+    if (!loaded) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.error("save failed", e);
+      }
+    }, 400);
+    return () => clearTimeout(saveTimer.current);
+  }, [data, loaded]);
+
+  const addTx = (tx) => setData((d) => ({ ...d, tx: [...d.tx, tx] }));
+  const delTx = (id) => setData((d) => ({ ...d, tx: d.tx.filter((t) => t.id !== id) }));
+  const setBudget = (cat, amt) => setData((d) => ({ ...d, budgets: { ...d.budgets, [cat]: amt } }));
+  const addGoal = (g) => setData((d) => ({ ...d, goals: [...d.goals, g] }));
+  const delGoal = (id) => setData((d) => ({ ...d, goals: d.goals.filter((g) => g.id !== id) }));
+  const contribGoal = (id, amt) =>
+    setData((d) => ({
+      ...d,
+      goals: d.goals.map((g) => (g.id === id ? { ...g, saved: Math.max(0, g.saved + amt) } : g)),
+    }));
+
+  const nowMonth = monthKey(todayISO());
+
+  if (!loaded)
+    return (
+      <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: DISPLAY, color: T.indigo, fontSize: 18, fontWeight: 600 }}>ledger</span>
+      </div>
+    );
+
+  return (
+    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: SANS, paddingBottom: 92 }}>
+      <style>{`
+        * { box-sizing: border-box; }
+        input, select, button { font-family: inherit; }
+        input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid ${T.indigo}; outline-offset: 2px; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        button { -webkit-tap-highlight-color: transparent; transition: transform 0.12s ease; }
+        button:active { transform: scale(0.96); }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+        @keyframes sheetUp { from { transform: translateY(24px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+      `}</style>
+
+      <header style={{ padding: "22px 20px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h1 style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em" }}>
+          ledger<span style={{ color: T.indigo }}>.</span>
+        </h1>
+        <span style={{ fontSize: 12, fontWeight: 500, color: T.faint, background: T.surface, border: `1px solid ${T.line}`, borderRadius: 999, padding: "6px 12px" }}>
+          {monthName(nowMonth)}
+        </span>
+      </header>
+
+      <main style={{ padding: "10px 16px 0", maxWidth: 560, margin: "0 auto", animation: "fadeIn 0.25s ease" }}>
+        {view === "dash" && <Dashboard data={data} nowMonth={nowMonth} />}
+        {view === "tx" && <Transactions data={data} delTx={delTx} />}
+        {view === "budget" && <Budget data={data} nowMonth={nowMonth} setBudget={setBudget} />}
+        {view === "goals" && <Goals data={data} delGoal={delGoal} openContrib={(id) => setSheet({ contrib: id })} openNew={() => setSheet("goal")} />}
+      </main>
+
+      {(view === "dash" || view === "tx") && (
+        <button
+          onClick={() => setSheet("tx")}
+          aria-label="Add transaction"
+          style={{
+            position: "fixed", right: 18, bottom: 88, width: 56, height: 56, borderRadius: 28,
+            background: GRAD, color: "#fff", border: "none", fontSize: 28, lineHeight: 1,
+            fontWeight: 300, cursor: "pointer", boxShadow: "0 8px 24px rgba(99,102,241,0.4)",
+          }}
+        >
+          +
+        </button>
+      )}
+
+      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(14,16,26,0.92)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderTop: `1px solid ${T.line}`, display: "flex" }}>
+        {[
+          ["dash", "Home", "◆"],
+          ["tx", "Activity", "≣"],
+          ["budget", "Budget", "◐"],
+          ["goals", "Goals", "◎"],
+        ].map(([k, label, icon]) => (
+          <button
+            key={k}
+            onClick={() => setView(k)}
+            style={{
+              flex: 1, padding: "12px 0 16px", background: "none", border: "none", cursor: "pointer",
+              color: view === k ? T.indigo : T.faint, transition: "color 0.15s",
+            }}
+          >
+            <div style={{ fontSize: 16, lineHeight: 1 }}>{icon}</div>
+            <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 5, letterSpacing: "0.02em" }}>{label}</div>
+          </button>
+        ))}
+      </nav>
+
+      {sheet === "tx" && <TxSheet close={() => setSheet(null)} addTx={addTx} />}
+      {sheet === "goal" && <GoalSheet close={() => setSheet(null)} addGoal={addGoal} />}
+      {sheet && sheet.contrib && (
+        <ContribSheet
+          goal={data.goals.find((g) => g.id === sheet.contrib)}
+          close={() => setSheet(null)}
+          contrib={(amt) => contribGoal(sheet.contrib, amt)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ---------- shared bits ---------- */
+function SectionLabel({ children, right }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "24px 2px 12px" }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: T.dim, letterSpacing: "0.01em" }}>{children}</span>
+      {right}
+    </div>
+  );
+}
+
+function Card({ children, style }) {
+  return (
+    <div style={{ background: T.surface, border: `1px solid ${T.line}`, borderRadius: 16, padding: 16, ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function Bar({ pct, color }) {
+  const mounted = useMounted();
+  return (
+    <div style={{ height: 6, background: T.raised, borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ height: "100%", width: `${mounted ? Math.min(100, pct) : 0}%`, background: color, borderRadius: 3, transition: "width 0.8s cubic-bezier(0.22,1,0.36,1)" }} />
+    </div>
+  );
+}
+
+/* colored category chip — the color system that organizes every entry */
+function CatChip({ cat, size = 38 }) {
+  const c = catColor(cat);
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: size * 0.32, flexShrink: 0,
+        background: `${c}1f`, border: `1px solid ${c}40`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: c, fontWeight: 700, fontSize: size * 0.4, fontFamily: DISPLAY,
+      }}
+    >
+      {cat.charAt(0)}
+    </div>
+  );
+}
+
+function TxRow({ t, first, onClick, showBal }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 0", borderTop: first ? "none" : `1px solid ${T.lineSoft}`, cursor: onClick ? "pointer" : "default" }}
+    >
+      <CatChip cat={t.cat} />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {t.note || t.cat}
+        </div>
+        <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>
+          <span style={{ color: catColor(t.cat), fontWeight: 600 }}>{t.cat}</span>
+          <span> · {niceDate(t.date)}</span>
+        </div>
+      </div>
+      <div style={{ textAlign: "right", flexShrink: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 600, ...NUM, color: t.type === "in" ? T.green : T.text }}>
+          {t.type === "in" ? "+" : "−"}{fmt(t.amount).replace("GH₵ ", "")}
+        </div>
+        {showBal && <div style={{ fontSize: 11, color: T.faint, marginTop: 2, ...NUM }}>bal {fmtShort(t.bal)}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- dashboard ---------- */
+function Dashboard({ data, nowMonth }) {
+  const monthTx = data.tx.filter((t) => monthKey(t.date) === nowMonth);
+  const income = monthTx.filter((t) => t.type === "in").reduce((s, t) => s + t.amount, 0);
+  const spent = monthTx.filter((t) => t.type === "out").reduce((s, t) => s + t.amount, 0);
+
+  const allIn = data.tx.filter((t) => t.type === "in").reduce((s, t) => s + t.amount, 0);
+  const allOut = data.tx.filter((t) => t.type === "out").reduce((s, t) => s + t.amount, 0);
+  const balance = allIn - allOut;
+
+  const byCat = {};
+  monthTx.filter((t) => t.type === "out").forEach((t) => { byCat[t.cat] = (byCat[t.cat] || 0) + t.amount; });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const catTotal = cats.reduce((s, [, v]) => s + v, 0);
+
+  const budgetTotal = Object.values(data.budgets).reduce((s, v) => s + Number(v || 0), 0);
+  const recent = [...data.tx].sort((a, b) => (a.date < b.date ? 1 : -1) || b.ts - a.ts).slice(0, 5);
+  const goalSaved = data.goals.reduce((s, g) => s + g.saved, 0);
+
+  const animBalance = useCountUp(balance);
+  const animIncome = useCountUp(income, 700);
+  const animSpent = useCountUp(spent, 700);
+
+  return (
+    <div>
+      {/* gradient balance card */}
+      <div
+        style={{
+          background: GRAD, borderRadius: 20, padding: "22px 20px",
+          boxShadow: "0 12px 36px rgba(79,70,229,0.35)", position: "relative", overflow: "hidden",
+        }}
+      >
+        <div style={{ position: "absolute", top: -60, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+        <div style={{ position: "absolute", bottom: -80, left: -30, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+        <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          Total balance
+        </div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 36, fontWeight: 700, marginTop: 6, letterSpacing: "-0.02em", ...NUM }}>
+          {fmt(animBalance)}
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+          {[
+            ["↓ In", animIncome, T.green],
+            ["↑ Out", animSpent, "#fda4af"],
+          ].map(([label, val, c]) => (
+            <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 12px", backdropFilter: "blur(4px)" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>{label} this month</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 3, color: c, ...NUM }}>{fmtShort(val)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {budgetTotal > 0 && (
+        <>
+          <SectionLabel>Monthly budget</SectionLabel>
+          <Card style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <Ring pct={(spent / budgetTotal) * 100} size={64} stroke={6} color={spent > budgetTotal ? T.red : T.indigo}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: spent > budgetTotal ? T.red : T.indigo, ...NUM }}>
+                {Math.min(999, Math.round((spent / budgetTotal) * 100))}%
+              </span>
+            </Ring>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, ...NUM, color: spent > budgetTotal ? T.red : T.text }}>{fmt(spent)}</div>
+              <div style={{ fontSize: 12.5, color: T.faint, marginTop: 3, ...NUM }}>of {fmt(budgetTotal)} budget</div>
+              <div style={{ fontSize: 12, marginTop: 5, fontWeight: 600, color: spent > budgetTotal ? T.red : T.green }}>
+                {spent > budgetTotal ? `${fmt(spent - budgetTotal)} over` : `${fmt(budgetTotal - spent)} remaining`}
+              </div>
+            </div>
+          </Card>
+        </>
+      )}
+
+      {cats.length > 0 && (
+        <>
+          <SectionLabel>Spending by category</SectionLabel>
+          <Card>
+            {/* stacked color band — the month at a glance */}
+            <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", gap: 2 }}>
+              {cats.map(([cat, amt]) => (
+                <div key={cat} style={{ width: `${(amt / catTotal) * 100}%`, background: catColor(cat), minWidth: 3 }} />
+              ))}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              {cats.slice(0, 5).map(([cat, amt]) => (
+                <div key={cat} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0" }}>
+                  <span style={{ width: 9, height: 9, borderRadius: 3, background: catColor(cat), flexShrink: 0 }} />
+                  <span style={{ fontSize: 13.5, color: T.dim, flex: 1 }}>{cat}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, ...NUM }}>{fmtShort(amt)}</span>
+                  <span style={{ fontSize: 11.5, color: T.faint, width: 34, textAlign: "right", ...NUM }}>{Math.round((amt / catTotal) * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </>
+      )}
+
+      {data.goals.length > 0 && (
+        <>
+          <SectionLabel>Goals</SectionLabel>
+          <Card style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 13.5, color: T.dim }}>{data.goals.length} goal{data.goals.length > 1 ? "s" : ""} in progress</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: T.green, ...NUM }}>{fmtShort(goalSaved)} saved</span>
+          </Card>
+        </>
+      )}
+
+      <SectionLabel>Recent activity</SectionLabel>
+      {recent.length === 0 ? (
+        <Card style={{ textAlign: "center", padding: 30 }}>
+          <div style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 600, color: T.dim }}>No activity yet</div>
+          <div style={{ fontSize: 13, color: T.faint, marginTop: 6 }}>Tap + to record your first transaction.</div>
+        </Card>
+      ) : (
+        <Card style={{ padding: "3px 16px" }}>
+          {recent.map((t, i) => <TxRow key={t.id} t={t} first={i === 0} />)}
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* ---------- transactions ---------- */
+function Transactions({ data, delTx }) {
+  const [confirm, setConfirm] = useState(null);
+  const [filter, setFilter] = useState(null); // category filter — tap a chip to isolate a color
+
+  const sorted = useMemo(
+    () => [...data.tx].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.ts - b.ts)),
+    [data.tx]
+  );
+
+  let run = 0;
+  const withBal = sorted.map((t) => {
+    run += t.type === "in" ? t.amount : -t.amount;
+    return { ...t, bal: run };
+  });
+
+  const activeCats = [...new Set(withBal.map((t) => t.cat))];
+  const visible = filter ? withBal.filter((t) => t.cat === filter) : withBal;
+
+  const months = {};
+  visible.forEach((t) => {
+    const k = monthKey(t.date);
+    (months[k] = months[k] || []).push(t);
+  });
+  const monthKeys = Object.keys(months).sort().reverse();
+
+  if (sorted.length === 0)
+    return (
+      <Card style={{ textAlign: "center", padding: 34 }}>
+        <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 600, color: T.dim }}>No transactions yet</div>
+        <div style={{ fontSize: 13, color: T.faint, marginTop: 6 }}>Everything you record shows up here, organized by category color.</div>
+      </Card>
+    );
+
+  return (
+    <div>
+      {/* color filter rail */}
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 4, WebkitOverflowScrolling: "touch" }}>
+        <FilterPill active={!filter} color={T.indigo} label="All" onClick={() => setFilter(null)} />
+        {activeCats.map((c) => (
+          <FilterPill key={c} active={filter === c} color={catColor(c)} label={c} onClick={() => setFilter(filter === c ? null : c)} />
+        ))}
+      </div>
+
+      {monthKeys.map((mk) => {
+        const rows = [...months[mk]].reverse();
+        const mIn = months[mk].filter((t) => t.type === "in").reduce((s, t) => s + t.amount, 0);
+        const mOut = months[mk].filter((t) => t.type === "out").reduce((s, t) => s + t.amount, 0);
+        return (
+          <div key={mk} style={{ marginBottom: 8 }}>
+            <SectionLabel
+              right={
+                <span style={{ fontSize: 12, ...NUM }}>
+                  <span style={{ color: T.green }}>+{fmtShort(mIn).replace("GH₵ ", "")}</span>
+                  <span style={{ color: T.faint }}> / </span>
+                  <span style={{ color: T.red }}>−{fmtShort(mOut).replace("GH₵ ", "")}</span>
+                </span>
+              }
+            >
+              {monthName(mk)}
+            </SectionLabel>
+            <Card style={{ padding: "3px 16px" }}>
+              {rows.map((t, i) => (
+                <div key={t.id}>
+                  <TxRow t={t} first={i === 0} showBal={!filter} onClick={() => setConfirm(confirm === t.id ? null : t.id)} />
+                  {confirm === t.id && (
+                    <button
+                      onClick={() => { delTx(t.id); setConfirm(null); }}
+                      style={{ margin: "0 0 12px 50px", background: `${T.red}14`, border: `1px solid ${T.red}50`, color: T.red, borderRadius: 8, padding: "6px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      Delete transaction
+                    </button>
+                  )}
+                </div>
+              ))}
+            </Card>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FilterPill({ active, color, label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+        background: active ? `${color}1f` : T.surface,
+        border: `1px solid ${active ? `${color}60` : T.line}`,
+        color: active ? color : T.dim,
+        borderRadius: 999, padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+        transition: "all 0.15s",
+      }}
+    >
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />
+      {label}
+    </button>
+  );
+}
+
+/* ---------- budget ---------- */
+function Budget({ data, nowMonth, setBudget }) {
+  const monthOut = data.tx.filter((t) => t.type === "out" && monthKey(t.date) === nowMonth);
+  const spentBy = {};
+  monthOut.forEach((t) => { spentBy[t.cat] = (spentBy[t.cat] || 0) + t.amount; });
+
+  const totalBudget = EXPENSE_CATS.reduce((s, c) => s + Number(data.budgets[c] || 0), 0);
+  const totalSpent = Object.values(spentBy).reduce((s, v) => s + v, 0);
+  const over = totalBudget > 0 && totalSpent > totalBudget;
+  const animSpentTotal = useCountUp(totalSpent, 700);
+
+  return (
+    <div>
+      <Card style={{ background: `linear-gradient(135deg, ${T.surface} 0%, #171a2e 100%)`, display: "flex", alignItems: "center", gap: 18 }}>
+        <Ring pct={totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0} size={92} stroke={8} color={over ? T.red : T.indigo}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: over ? T.red : T.text, ...NUM }}>
+              {totalBudget > 0 ? Math.min(999, Math.round((totalSpent / totalBudget) * 100)) + "%" : "—"}
+            </div>
+            <div style={{ fontSize: 9.5, color: T.faint, fontWeight: 600, letterSpacing: "0.04em" }}>USED</div>
+          </div>
+        </Ring>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: T.faint, letterSpacing: "0.05em", textTransform: "uppercase" }}>Spent this month</div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 700, marginTop: 4, color: over ? T.red : T.text, ...NUM }}>{fmt(animSpentTotal)}</div>
+          <div style={{ fontSize: 12.5, color: T.faint, marginTop: 3, ...NUM }}>
+            {totalBudget > 0 ? `of ${fmt(totalBudget)} budget` : "no budget set"}
+          </div>
+        </div>
+      </Card>
+
+      <SectionLabel>Category limits</SectionLabel>
+      {EXPENSE_CATS.map((cat) => {
+        const b = Number(data.budgets[cat] || 0);
+        const s = spentBy[cat] || 0;
+        const catOver = b > 0 && s > b;
+        const c = catColor(cat);
+        return (
+          <Card key={cat} style={{ marginBottom: 10, padding: "13px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+              <Ring pct={b > 0 ? (s / b) * 100 : 0} size={46} stroke={4.5} color={catOver ? T.red : c}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: catOver ? T.red : c, ...NUM }}>
+                  {b > 0 ? Math.min(99, Math.round((s / b) * 100)) + (s > b ? "+" : "") + "%" : "·"}
+                </span>
+              </Ring>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>{cat}</div>
+                {b > 0 && (
+                  <div style={{ fontSize: 11.5, marginTop: 3, ...NUM, color: catOver ? T.red : T.faint }}>
+                    {fmt(s).replace("GH₵ ", "")} · {catOver ? `over by ${fmt(s - b).replace("GH₵ ", "")}` : `${fmt(b - s).replace("GH₵ ", "")} left`}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11.5, color: T.faint }}>GH₵</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={data.budgets[cat] ?? ""}
+                  onChange={(e) => setBudget(cat, e.target.value)}
+                  style={{
+                    width: 78, background: T.raised, border: `1px solid ${T.line}`, borderRadius: 8,
+                    color: T.text, fontSize: 13.5, fontWeight: 500, padding: "8px 9px", textAlign: "right", ...NUM,
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------- goals ---------- */
+function Goals({ data, delGoal, openContrib, openNew }) {
+  const [confirm, setConfirm] = useState(null);
+  return (
+    <div>
+      {data.goals.length === 0 ? (
+        <Card style={{ textAlign: "center", padding: 34 }}>
+          <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 600, color: T.dim }}>No goals yet</div>
+          <div style={{ fontSize: 13, color: T.faint, marginTop: 6 }}>Set a target and put money against it.</div>
+        </Card>
+      ) : (
+        data.goals.map((g) => {
+          const pct = g.target > 0 ? (g.saved / g.target) * 100 : 0;
+          const done = g.saved >= g.target;
+          return (
+            <Card key={g.id} style={{ marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 600 }}>{g.name}</span>
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: done ? T.green : T.indigo, ...NUM }}>
+                  {done ? "Reached ✓" : `${Math.floor(pct)}%`}
+                </span>
+              </div>
+              <div style={{ marginTop: 13 }}>
+                <Bar pct={pct} color={done ? T.green : T.indigo} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginTop: 8, ...NUM }}>
+                <span style={{ color: T.green, fontWeight: 600 }}>{fmt(g.saved)}</span>
+                <span style={{ color: T.faint }}>of {fmt(g.target)}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                <button
+                  onClick={() => openContrib(g.id)}
+                  style={{ flex: 1, background: `${T.indigo}1a`, border: `1px solid ${T.indigo}50`, color: T.indigo, borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Add money
+                </button>
+                <button
+                  onClick={() => setConfirm(confirm === g.id ? null : g.id)}
+                  aria-label="More options"
+                  style={{ background: "none", border: `1px solid ${T.line}`, color: T.faint, borderRadius: 10, padding: "10px 16px", fontSize: 13, cursor: "pointer" }}
+                >
+                  ···
+                </button>
+              </div>
+              {confirm === g.id && (
+                <button
+                  onClick={() => { delGoal(g.id); setConfirm(null); }}
+                  style={{ marginTop: 10, width: "100%", background: `${T.red}14`, border: `1px solid ${T.red}50`, color: T.red, borderRadius: 10, padding: "9px 0", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Delete goal
+                </button>
+              )}
+            </Card>
+          );
+        })
+      )}
+
+      <button
+        onClick={openNew}
+        style={{ width: "100%", marginTop: 8, background: GRAD, border: "none", color: "#fff", borderRadius: 12, padding: "14px 0", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em", cursor: "pointer", boxShadow: "0 6px 20px rgba(99,102,241,0.3)" }}
+      >
+        New goal
+      </button>
+    </div>
+  );
+}
+
+/* ---------- sheets ---------- */
+function Sheet({ title, close, children }) {
+  return (
+    <div
+      onClick={close}
+      style={{ position: "fixed", inset: 0, background: "rgba(4,5,12,0.75)", zIndex: 40, display: "flex", alignItems: "flex-end", justifyContent: "center", backdropFilter: "blur(3px)" }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 560, background: T.surface, border: `1px solid ${T.line}`, borderBottom: "none",
+          borderRadius: "20px 20px 0 0", padding: "18px 20px 32px", animation: "sheetUp 0.22s ease",
+        }}
+      >
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: T.line, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+          <span style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 600 }}>{title}</span>
+          <button onClick={close} aria-label="Close" style={{ background: T.raised, border: "none", color: T.dim, width: 30, height: 30, borderRadius: 15, fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: "100%", background: "#191c2b", border: "1px solid #232738", borderRadius: 10,
+  color: "#eef0f6", fontSize: 15, padding: "13px 13px", marginBottom: 12,
+};
+
+function TxSheet({ close, addTx }) {
+  const [type, setType] = useState("out");
+  const [amount, setAmount] = useState("");
+  const [cat, setCat] = useState(EXPENSE_CATS[0]);
+  const [note, setNote] = useState("");
+  const [date, setDate] = useState(todayISO());
+  const cats = type === "in" ? INCOME_CATS : EXPENSE_CATS;
+  const valid = parseFloat(amount) > 0;
+
+  const save = () => {
+    if (!valid) return;
+    addTx({ id: uid(), type, amount: parseFloat(amount), cat: cats.includes(cat) ? cat : cats[0], note: note.trim(), date, ts: Date.now() });
+    close();
+  };
+
+  return (
+    <Sheet title="New transaction" close={close}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        {[["out", "Money out", T.red], ["in", "Money in", T.green]].map(([k, label, c]) => (
+          <button
+            key={k}
+            onClick={() => { setType(k); setCat((k === "in" ? INCOME_CATS : EXPENSE_CATS)[0]); }}
+            style={{
+              flex: 1, padding: "12px 0", borderRadius: 10, cursor: "pointer", fontSize: 13.5, fontWeight: 600,
+              background: type === k ? `${c}1a` : "none",
+              border: `1px solid ${type === k ? `${c}60` : T.line}`,
+              color: type === k ? c : T.dim, transition: "all 0.15s",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <input type="number" inputMode="decimal" placeholder="Amount (GH₵)" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ ...inputStyle, fontSize: 19, fontWeight: 600, ...NUM }} autoFocus />
+
+      {/* color-coded category picker */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        {cats.map((c) => {
+          const col = catColor(c);
+          const active = cat === c;
+          return (
+            <button
+              key={c}
+              onClick={() => setCat(c)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: active ? `${col}1f` : T.raised,
+                border: `1px solid ${active ? `${col}60` : T.line}`,
+                color: active ? col : T.dim,
+                borderRadius: 999, padding: "8px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: col }} />
+              {c}
+            </button>
+          );
+        })}
+      </div>
+
+      <input type="text" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle} />
+      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...inputStyle, colorScheme: "dark" }} />
+      <button
+        onClick={save}
+        disabled={!valid}
+        style={{ width: "100%", background: valid ? GRAD : T.raised, border: "none", color: valid ? "#fff" : T.faint, borderRadius: 12, padding: "15px 0", fontSize: 14.5, fontWeight: 700, cursor: valid ? "pointer" : "default", marginTop: 4, boxShadow: valid ? "0 6px 20px rgba(99,102,241,0.3)" : "none" }}
+      >
+        Save transaction
+      </button>
+    </Sheet>
+  );
+}
+
+function GoalSheet({ close, addGoal }) {
+  const [name, setName] = useState("");
+  const [target, setTarget] = useState("");
+  const valid = name.trim() && parseFloat(target) > 0;
+  const save = () => {
+    if (!valid) return;
+    addGoal({ id: uid(), name: name.trim(), target: parseFloat(target), saved: 0 });
+    close();
+  };
+  return (
+    <Sheet title="New goal" close={close}>
+      <input type="text" placeholder="What are you saving for?" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} autoFocus />
+      <input type="number" inputMode="decimal" placeholder="Target (GH₵)" value={target} onChange={(e) => setTarget(e.target.value)} style={{ ...inputStyle, fontSize: 19, fontWeight: 600, ...NUM }} />
+      <button
+        onClick={save}
+        disabled={!valid}
+        style={{ width: "100%", background: valid ? GRAD : T.raised, border: "none", color: valid ? "#fff" : T.faint, borderRadius: 12, padding: "15px 0", fontSize: 14.5, fontWeight: 700, cursor: valid ? "pointer" : "default", marginTop: 4 }}
+      >
+        Create goal
+      </button>
+    </Sheet>
+  );
+}
+
+function ContribSheet({ goal, close, contrib }) {
+  const [amount, setAmount] = useState("");
+  if (!goal) return null;
+  const valid = parseFloat(amount) > 0;
+  const save = (sign) => {
+    if (!valid) return;
+    contrib(sign * parseFloat(amount));
+    close();
+  };
+  return (
+    <Sheet title={goal.name} close={close}>
+      <div style={{ fontSize: 12.5, color: T.faint, marginBottom: 12, ...NUM }}>
+        {fmt(goal.saved)} of {fmt(goal.target)} so far
+      </div>
+      <input type="number" inputMode="decimal" placeholder="Amount (GH₵)" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ ...inputStyle, fontSize: 19, fontWeight: 600, ...NUM }} autoFocus />
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={() => save(1)}
+          disabled={!valid}
+          style={{ flex: 1, background: valid ? GRAD : T.raised, border: "none", color: valid ? "#fff" : T.faint, borderRadius: 12, padding: "14px 0", fontSize: 13.5, fontWeight: 700, cursor: valid ? "pointer" : "default" }}
+        >
+          Add money
+        </button>
+        <button
+          onClick={() => save(-1)}
+          disabled={!valid}
+          style={{ flex: 1, background: "none", border: `1px solid ${T.line}`, color: T.dim, borderRadius: 12, padding: "14px 0", fontSize: 13.5, fontWeight: 600, cursor: valid ? "pointer" : "default" }}
+        >
+          Withdraw
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Ledger />);
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
