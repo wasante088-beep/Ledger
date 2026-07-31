@@ -11,892 +11,579 @@
 <link rel="apple-touch-icon" href="./icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" />
 <style>
-  html, body { margin: 0; padding: 0; background: #0a0c14; }
+:root{
+  --bg:#0a0c14; --surface:#12141f; --raised:#191c2b; --line:#232738; --line-soft:#1c2030;
+  --text:#eef0f6; --dim:#9aa1b5; --faint:#5d6478;
+  --indigo:#818cf8; --green:#4ade80; --red:#fb7185;
+  --grad:linear-gradient(135deg,#4338ca 0%,#6d28d9 55%,#7c3aed 100%);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg)}
+body{color:var(--text);font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;padding-bottom:92px}
+button,input{font-family:inherit}
+button{cursor:pointer;transition:transform .12s ease}
+button:active{transform:scale(.96)}
+input:focus-visible,button:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.num{font-variant-numeric:tabular-nums}
+.disp{font-weight:700;letter-spacing:-.02em}
+header{padding:22px 20px 14px;display:flex;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em}
+h1 span{color:var(--indigo)}
+.month-pill{font-size:12px;font-weight:500;color:var(--faint);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+main{padding:10px 16px 0;max-width:560px;margin:0 auto;animation:fadeIn .25s ease}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:24px 2px 12px}
+.sec>span:first-child{font-size:13px;font-weight:600;color:var(--dim)}
+.grad-card{background:var(--grad);border-radius:20px;padding:22px 20px;box-shadow:0 12px 36px rgba(79,70,229,.35);position:relative;overflow:hidden}
+.grad-card .blob1{position:absolute;top:-60px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.08)}
+.grad-card .blob2{position:absolute;bottom:-80px;left:-30px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05)}
+.grad-label{font-size:12px;font-weight:600;color:rgba(255,255,255,.75);letter-spacing:.06em;text-transform:uppercase}
+.bal{font-size:36px;margin-top:6px}
+.pills{display:flex;gap:10px;margin-top:18px}
+.pill{flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:10px 12px}
+.pill .lbl{font-size:11px;font-weight:600;color:rgba(255,255,255,.75)}
+.pill .val{font-size:15px;font-weight:700;margin-top:3px}
+.bar{height:6px;background:var(--raised);border-radius:3px;overflow:hidden}
+.bar>div{height:100%;border-radius:3px;width:0;transition:width .8s cubic-bezier(.22,1,.36,1)}
+.ring-wrap{position:relative;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg);display:block}
+.ring-wrap circle.fg{transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1)}
+.ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center}
+.chip{border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700}
+.row{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--line-soft)}
+.row.first{border-top:none}
+.row .mid{min-width:0;flex:1}
+.row .t1{font-size:14.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t2{font-size:12px;color:var(--faint);margin-top:2px}
+.row .amt{font-size:14.5px;font-weight:600;text-align:right}
+.row .bal2{font-size:11px;color:var(--faint);margin-top:2px;text-align:right}
+.fab{position:fixed;right:18px;bottom:88px;width:56px;height:56px;border-radius:28px;background:var(--grad);color:#fff;border:none;font-size:28px;line-height:1;font-weight:300;box-shadow:0 8px 24px rgba(99,102,241,.4);z-index:20}
+nav{position:fixed;bottom:0;left:0;right:0;background:rgba(14,16,26,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;z-index:30}
+nav button{flex:1;padding:12px 0 16px;background:none;border:none;color:var(--faint)}
+nav button.on{color:var(--indigo)}
+nav .ic{font-size:16px;line-height:1}
+nav .nl{font-size:10.5px;font-weight:600;margin-top:5px}
+.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:4px;-webkit-overflow-scrolling:touch}
+.fpill{display:flex;align-items:center;gap:6px;flex-shrink:0;background:var(--surface);border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.fpill .dot{width:7px;height:7px;border-radius:50%}
+.cat-name{font-weight:600}
+.del-btn{margin:0 0 12px 50px;background:rgba(251,113,133,.08);border:1px solid rgba(251,113,133,.31);color:var(--red);border-radius:8px;padding:6px 14px;font-size:12.5px;font-weight:600}
+.empty{text-align:center;padding:32px 16px}
+.empty .e1{font-size:17px;font-weight:600;color:var(--dim)}
+.empty .e2{font-size:13px;color:var(--faint);margin-top:6px}
+.overlay{position:fixed;inset:0;background:rgba(4,5,12,.75);z-index:40;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}
+.sheet{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;padding:18px 20px 32px;animation:sheetUp .22s ease}
+.handle{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.sheet-head .ti{font-size:18px;font-weight:600}
+.x{background:var(--raised);border:none;color:var(--dim);width:30px;height:30px;border-radius:15px;font-size:16px;line-height:1}
+.inp{width:100%;background:var(--raised);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;padding:13px;margin-bottom:12px}
+.inp.big{font-size:19px;font-weight:600}
+.seg{display:flex;gap:8px;margin-bottom:14px}
+.seg button{flex:1;padding:12px 0;border-radius:10px;font-size:13.5px;font-weight:600;background:none;border:1px solid var(--line);color:var(--dim);transition:all .15s}
+.catpick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.primary{width:100%;background:var(--grad);border:none;color:#fff;border-radius:12px;padding:15px 0;font-size:14.5px;font-weight:700;box-shadow:0 6px 20px rgba(99,102,241,.3)}
+.primary:disabled{background:var(--raised);color:var(--faint);box-shadow:none}
+.ghost{background:none;border:1px solid var(--line);color:var(--dim);border-radius:12px;padding:14px 0;font-size:13.5px;font-weight:600}
+.goal-card{margin-bottom:12px}
+.goal-head{display:flex;justify-content:space-between;align-items:baseline}
+.goal-name{font-size:17px;font-weight:600}
+.goal-actions{display:flex;gap:8px;margin-top:14px}
+.goal-add{flex:1;background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.31);color:var(--indigo);border-radius:10px;padding:10px 0;font-size:13px;font-weight:600}
+.goal-more{background:none;border:1px solid var(--line);color:var(--faint);border-radius:10px;padding:10px 16px;font-size:13px}
+.goal-del{margin-top:10px;width:100%;background:rgba(251,113,133,.08);border:1px solid rgba(251,113,133,.31);color:var(--red);border-radius:10px;padding:9px 0;font-size:13px;font-weight:600}
+.stack-band{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px}
+.legend-row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13.5px}
+.legend-row .sq{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+#err{position:fixed;top:0;left:0;right:0;background:#7f1d1d;color:#fff;padding:10px 14px;font-size:12px;z-index:99;display:none;word-break:break-all}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes sheetUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useMemo } = React;
-
-/* ---------- design tokens ---------- */
-const T = {
-  bg: "#0a0c14",
-  surface: "#12141f",
-  raised: "#191c2b",
-  line: "#232738",
-  lineSoft: "#1c2030",
-  text: "#eef0f6",
-  dim: "#9aa1b5",
-  faint: "#5d6478",
-  indigo: "#818cf8",
-  indigoDeep: "#4f46e5",
-  violet: "#8b5cf6",
-  green: "#4ade80",
-  red: "#fb7185",
+<div id="err"></div>
+<div id="app"></div>
+<script>
+"use strict";
+/* on-screen error reporter — no more silent blank screens */
+window.onerror = function (msg, src, line) {
+  var e = document.getElementById("err");
+  e.style.display = "block";
+  e.textContent = "Error: " + msg + " (line " + line + ")";
 };
 
-const GRAD = "linear-gradient(135deg, #4338ca 0%, #6d28d9 55%, #7c3aed 100%)";
-const SANS = "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif";
-const DISPLAY = "'Space Grotesk', 'Inter', -apple-system, sans-serif";
-
-/* category colors — every entry carries its category's color */
-const CAT_COLORS = {
-  "Food": "#fbbf24",
-  "Transport": "#38bdf8",
-  "Data & Airtime": "#a78bfa",
-  "Rent & Utilities": "#f472b6",
-  "Business": "#818cf8",
-  "Health & Gym": "#34d399",
-  "Personal": "#fb923c",
-  "Wages": "#4ade80",
-  "Freelance": "#22d3ee",
-  "Other": "#94a3b8",
+/* ---------- config ---------- */
+var KEY = "ledger-data-v1";
+var CATS_OUT = ["Food","Transport","Data & Airtime","Rent & Utilities","Business","Health & Gym","Personal","Other"];
+var CATS_IN = ["Wages","Freelance","Business","Other"];
+var COLORS = {
+  "Food":"#fbbf24","Transport":"#38bdf8","Data & Airtime":"#a78bfa","Rent & Utilities":"#f472b6",
+  "Business":"#818cf8","Health & Gym":"#34d399","Personal":"#fb923c",
+  "Wages":"#4ade80","Freelance":"#22d3ee","Other":"#94a3b8"
 };
-const catColor = (c) => CAT_COLORS[c] || "#94a3b8";
+function cc(cat){ return COLORS[cat] || "#94a3b8"; }
 
-const EXPENSE_CATS = ["Food", "Transport", "Data & Airtime", "Rent & Utilities", "Business", "Health & Gym", "Personal", "Other"];
-const INCOME_CATS = ["Wages", "Freelance", "Business", "Other"];
+/* ---------- state ---------- */
+var S = { tx: [], budgets: {}, goals: [] };
+var view = "dash";
+var filter = null;
+var confirmId = null;
+var goalConfirm = null;
+var sheet = null;              /* null | "tx" | "goal" | {contrib:goalId} */
+var draft = null;              /* preserved tx-sheet values across re-render */
+var lastBal = 0;               /* previous balance for the count-up */
 
-const STORAGE_KEY = "ledger-data-v1";
+try {
+  var raw = localStorage.getItem(KEY);
+  if (raw) S = JSON.parse(raw);
+  if (!S.tx) S.tx = [];
+  if (!S.budgets) S.budgets = {};
+  if (!S.goals) S.goals = [];
+} catch (e) { /* start fresh */ }
+
+var saveTimer = null;
+function persist(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(function(){
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  }, 300);
+}
 
 /* ---------- helpers ---------- */
-const fmt = (n) =>
-  "GH₵ " + Number(n).toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const fmtShort = (n) => {
-  const v = Number(n);
-  if (Math.abs(v) >= 1000) return "GH₵ " + (v / 1000).toFixed(1).replace(/\.0$/, "") + "k";
-  return "GH₵ " + v.toFixed(0);
-};
-
-const todayISO = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-
-const monthKey = (iso) => iso.slice(0, 7);
-
-const niceDate = (iso) => {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-};
-
-const monthName = (key) => {
-  const [y, m] = key.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-};
-
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-
-const NUM = { fontVariantNumeric: "tabular-nums" };
-
-/* ---------- motion primitives ---------- */
-const reducedMotion = () =>
-  typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-/* animates a number toward its target with an ease-out curve */
-function useCountUp(value, dur = 900) {
-  const [display, setDisplay] = useState(value);
-  const prev = useRef(value);
-  useEffect(() => {
-    if (reducedMotion()) { prev.current = value; setDisplay(value); return; }
-    const from = prev.current;
-    const to = value;
-    if (from === to) return;
-    const start = performance.now();
-    let raf;
-    const tick = (now) => {
-      const p = Math.min(1, (now - start) / dur);
-      const e = 1 - Math.pow(1 - p, 3);
-      setDisplay(from + (to - from) * e);
-      if (p < 1) raf = requestAnimationFrame(tick);
-      else prev.current = to;
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, dur]);
-  return display;
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
+function fmt(n){
+  var v = Number(n) || 0;
+  var neg = v < 0; v = Math.abs(v);
+  var s = v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return (neg ? "\u2212" : "") + "GH\u20B5 " + s;
+}
+function fmtShort(n){
+  var v = Number(n) || 0;
+  if (Math.abs(v) >= 1000) return "GH\u20B5 " + (v/1000).toFixed(1).replace(/\.0$/,"") + "k";
+  return "GH\u20B5 " + Math.round(v);
+}
+function bare(n){ return fmt(n).replace("GH\u20B5 ",""); }
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function mKey(iso){ return iso.slice(0,7); }
+function niceDate(iso){
+  var p = iso.split("-");
+  return new Date(+p[0], +p[1]-1, +p[2]).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+}
+function mName(key){
+  var p = key.split("-");
+  return new Date(+p[0], +p[1]-1, 1).toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function reduced(){ return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
 
-/* true one frame after mount — lets rings and bars sweep in from zero */
-function useMounted() {
-  const [m, setM] = useState(reducedMotion());
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setM(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
+/* ---------- computed ---------- */
+function totals(){
+  var inc=0, out=0;
+  for (var i=0;i<S.tx.length;i++){ if(S.tx[i].type==="in") inc+=S.tx[i].amount; else out+=S.tx[i].amount; }
+  return { balance: inc-out };
+}
+function monthTotals(mk){
+  var inc=0, out=0;
+  for (var i=0;i<S.tx.length;i++){
+    var t=S.tx[i]; if (mKey(t.date)!==mk) continue;
+    if (t.type==="in") inc+=t.amount; else out+=t.amount;
+  }
+  return { inc: inc, out: out };
+}
+function spentByCat(mk){
+  var m={};
+  for (var i=0;i<S.tx.length;i++){
+    var t=S.tx[i];
+    if (t.type==="out" && mKey(t.date)===mk) m[t.cat]=(m[t.cat]||0)+t.amount;
+  }
   return m;
 }
-
-/* circular progress ring */
-function Ring({ pct, size = 52, stroke = 5, color, children }) {
-  const mounted = useMounted();
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const clamped = mounted ? Math.min(100, Math.max(0, pct)) : 0;
-  return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)", display: "block" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#1c2030" strokeWidth={stroke} />
-        <circle
-          cx={size / 2} cy={size / 2} r={r} fill="none"
-          stroke={color} strokeWidth={stroke} strokeLinecap="round"
-          strokeDasharray={circ} strokeDashoffset={circ * (1 - clamped / 100)}
-          style={{ transition: "stroke-dashoffset 0.9s cubic-bezier(0.22,1,0.36,1), stroke 0.3s" }}
-        />
-      </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {children}
-      </div>
-    </div>
-  );
+function budgetTotal(){
+  var s=0; for (var k in S.budgets) s+=Number(S.budgets[k]||0); return s;
 }
 
-/* ---------- root ---------- */
-function Ledger() {
-  const [view, setView] = useState("dash");
-  const [data, setData] = useState({ tx: [], budgets: {}, goals: [] });
-  const [loaded, setLoaded] = useState(false);
-  const [sheet, setSheet] = useState(null);
-  const saveTimer = useRef(null);
+/* ---------- svg ring ---------- */
+function ring(pct, size, stroke, color, inner){
+  var r=(size-stroke)/2, c=2*Math.PI*r;
+  var clamped=Math.min(100,Math.max(0,pct));
+  return '<div class="ring-wrap" style="width:'+size+'px;height:'+size+'px">'
+    + '<svg width="'+size+'" height="'+size+'">'
+    + '<circle cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="#1c2030" stroke-width="'+stroke+'"/>'
+    + '<circle class="fg" cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+stroke+'" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+c+'" data-target="'+(c*(1-clamped/100))+'"/>'
+    + '</svg><div class="ring-center">'+inner+'</div></div>';
+}
 
-  /* load from the phone's local storage */
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setData(JSON.parse(raw));
-    } catch (e) {
-      /* first run — start fresh */
-    }
-    setLoaded(true);
-  }, []);
+/* ---------- row / chip ---------- */
+function chip(cat, size){
+  var c=cc(cat);
+  return '<div class="chip" style="width:'+size+'px;height:'+size+'px;background:'+c+'1f;border:1px solid '+c+'40;color:'+c+';font-size:'+Math.round(size*0.4)+'px">'+esc(cat.charAt(0))+'</div>';
+}
+function txRow(t, first, showBal, clickable){
+  var amtColor = t.type==="in" ? "var(--green)" : "var(--text)";
+  var sign = t.type==="in" ? "+" : "\u2212";
+  return '<div class="row'+(first?' first':'')+'"'+(clickable?' data-act="confirm" data-id="'+t.id+'" style="cursor:pointer"':'')+'>'
+    + chip(t.cat, 38)
+    + '<div class="mid"><div class="t1">'+esc(t.note||t.cat)+'</div>'
+    + '<div class="t2"><span class="cat-name" style="color:'+cc(t.cat)+'">'+esc(t.cat)+'</span> \u00B7 '+niceDate(t.date)+'</div></div>'
+    + '<div><div class="amt num" style="color:'+amtColor+'">'+sign+bare(t.amount)+'</div>'
+    + (showBal && t.bal!==undefined ? '<div class="bal2 num">bal '+fmtShort(t.bal)+'</div>' : '')
+    + '</div></div>';
+}
 
-  /* save (debounced, guarded) */
-  useEffect(() => {
-    if (!loaded) return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (e) {
-        console.error("save failed", e);
+/* ---------- views ---------- */
+function dashView(){
+  var nm = mKey(todayISO());
+  var mt = monthTotals(nm);
+  var bal = totals().balance;
+  var bt = budgetTotal();
+  var byCat = spentByCat(nm);
+  var cats = Object.keys(byCat).map(function(k){return [k,byCat[k]];}).sort(function(a,b){return b[1]-a[1];});
+  var catTotal = cats.reduce(function(s,x){return s+x[1];},0);
+  var recent = S.tx.slice().sort(function(a,b){ return a.date<b.date?1:a.date>b.date?-1:b.ts-a.ts; }).slice(0,5);
+  var goalSaved = S.goals.reduce(function(s,g){return s+g.saved;},0);
+  var h = '';
+
+  h += '<div class="grad-card"><div class="blob1"></div><div class="blob2"></div>'
+    + '<div class="grad-label">Total balance</div>'
+    + '<div class="bal disp num" id="balNum" data-from="'+lastBal+'" data-to="'+bal+'">'+fmt(lastBal)+'</div>'
+    + '<div class="pills">'
+    + '<div class="pill"><div class="lbl">\u2193 In this month</div><div class="val num" style="color:var(--green)">'+fmtShort(mt.inc)+'</div></div>'
+    + '<div class="pill"><div class="lbl">\u2191 Out this month</div><div class="val num" style="color:#fda4af">'+fmtShort(mt.out)+'</div></div>'
+    + '</div></div>';
+
+  if (bt > 0){
+    var pct = (mt.out/bt)*100, over = mt.out>bt;
+    h += '<div class="sec"><span>Monthly budget</span></div><div class="card" style="display:flex;align-items:center;gap:16px">'
+      + ring(pct, 64, 6, over?"var(--red)":"var(--indigo)", '<span class="num" style="font-size:13px;font-weight:700;color:'+(over?'var(--red)':'var(--indigo)')+'">'+Math.min(999,Math.round(pct))+'%</span>')
+      + '<div style="flex:1"><div class="num" style="font-size:15px;font-weight:600;color:'+(over?'var(--red)':'var(--text)')+'">'+fmt(mt.out)+'</div>'
+      + '<div class="num" style="font-size:12.5px;color:var(--faint);margin-top:3px">of '+fmt(bt)+' budget</div>'
+      + '<div style="font-size:12px;margin-top:5px;font-weight:600;color:'+(over?'var(--red)':'var(--green)')+'">'+(over?fmt(mt.out-bt)+' over':fmt(bt-mt.out)+' remaining')+'</div></div></div>';
+  }
+
+  if (cats.length){
+    h += '<div class="sec"><span>Spending by category</span></div><div class="card">'
+      + '<div class="stack-band">';
+    cats.forEach(function(x){ h += '<div style="width:'+(x[1]/catTotal*100)+'%;background:'+cc(x[0])+';min-width:3px"></div>'; });
+    h += '</div><div style="margin-top:14px">';
+    cats.slice(0,5).forEach(function(x){
+      h += '<div class="legend-row"><span class="sq" style="background:'+cc(x[0])+'"></span>'
+        + '<span style="color:var(--dim);flex:1">'+esc(x[0])+'</span>'
+        + '<span class="num" style="font-weight:600;font-size:13px">'+fmtShort(x[1])+'</span>'
+        + '<span class="num" style="font-size:11.5px;color:var(--faint);width:34px;text-align:right">'+Math.round(x[1]/catTotal*100)+'%</span></div>';
+    });
+    h += '</div></div>';
+  }
+
+  if (S.goals.length){
+    h += '<div class="sec"><span>Goals</span></div><div class="card" style="display:flex;justify-content:space-between;align-items:center">'
+      + '<span style="font-size:13.5px;color:var(--dim)">'+S.goals.length+' goal'+(S.goals.length>1?'s':'')+' in progress</span>'
+      + '<span class="num" style="font-size:14px;font-weight:600;color:var(--green)">'+fmtShort(goalSaved)+' saved</span></div>';
+  }
+
+  h += '<div class="sec"><span>Recent activity</span></div>';
+  if (!recent.length){
+    h += '<div class="card empty"><div class="e1">No activity yet</div><div class="e2">Tap + to record your first transaction.</div></div>';
+  } else {
+    h += '<div class="card" style="padding:3px 16px">';
+    recent.forEach(function(t,i){ h += txRow(t, i===0, false, false); });
+    h += '</div>';
+  }
+  lastBal = bal;
+  return h;
+}
+
+function txView(){
+  var sorted = S.tx.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:a.ts-b.ts; });
+  if (!sorted.length){
+    return '<div class="card empty"><div class="e1">No transactions yet</div><div class="e2">Everything you record shows up here, organized by category color.</div></div>';
+  }
+  var run=0;
+  var withBal = sorted.map(function(t){
+    run += t.type==="in" ? t.amount : -t.amount;
+    var o = {}; for (var k in t) o[k]=t[k]; o.bal=run; return o;
+  });
+  var activeCats = [];
+  withBal.forEach(function(t){ if (activeCats.indexOf(t.cat)<0) activeCats.push(t.cat); });
+  var visible = filter ? withBal.filter(function(t){return t.cat===filter;}) : withBal;
+
+  var h = '<div class="filters">';
+  h += fpill(!filter, "var(--indigo)", "All", "");
+  activeCats.forEach(function(c){ h += fpill(filter===c, cc(c), c, c); });
+  h += '</div>';
+
+  var months = {};
+  visible.forEach(function(t){ var k=mKey(t.date); (months[k]=months[k]||[]).push(t); });
+  Object.keys(months).sort().reverse().forEach(function(mk){
+    var rows = months[mk].slice().reverse();
+    var mi=0, mo=0;
+    months[mk].forEach(function(t){ if(t.type==="in") mi+=t.amount; else mo+=t.amount; });
+    h += '<div class="sec"><span>'+mName(mk)+'</span><span class="num" style="font-size:12px">'
+      + '<span style="color:var(--green)">+'+fmtShort(mi).replace("GH\u20B5 ","")+'</span>'
+      + '<span style="color:var(--faint)"> / </span>'
+      + '<span style="color:var(--red)">\u2212'+fmtShort(mo).replace("GH\u20B5 ","")+'</span></span></div>';
+    h += '<div class="card" style="padding:3px 16px">';
+    rows.forEach(function(t,i){
+      h += txRow(t, i===0, !filter, true);
+      if (confirmId===t.id){
+        h += '<button class="del-btn" data-act="deltx" data-id="'+t.id+'">Delete transaction</button>';
       }
-    }, 400);
-    return () => clearTimeout(saveTimer.current);
-  }, [data, loaded]);
-
-  const addTx = (tx) => setData((d) => ({ ...d, tx: [...d.tx, tx] }));
-  const delTx = (id) => setData((d) => ({ ...d, tx: d.tx.filter((t) => t.id !== id) }));
-  const setBudget = (cat, amt) => setData((d) => ({ ...d, budgets: { ...d.budgets, [cat]: amt } }));
-  const addGoal = (g) => setData((d) => ({ ...d, goals: [...d.goals, g] }));
-  const delGoal = (id) => setData((d) => ({ ...d, goals: d.goals.filter((g) => g.id !== id) }));
-  const contribGoal = (id, amt) =>
-    setData((d) => ({
-      ...d,
-      goals: d.goals.map((g) => (g.id === id ? { ...g, saved: Math.max(0, g.saved + amt) } : g)),
-    }));
-
-  const nowMonth = monthKey(todayISO());
-
-  if (!loaded)
-    return (
-      <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: DISPLAY, color: T.indigo, fontSize: 18, fontWeight: 600 }}>ledger</span>
-      </div>
-    );
-
-  return (
-    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, fontFamily: SANS, paddingBottom: 92 }}>
-      <style>{`
-        * { box-sizing: border-box; }
-        input, select, button { font-family: inherit; }
-        input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid ${T.indigo}; outline-offset: 2px; }
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        button { -webkit-tap-highlight-color: transparent; transition: transform 0.12s ease; }
-        button:active { transform: scale(0.96); }
-        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-        @keyframes sheetUp { from { transform: translateY(24px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-      `}</style>
-
-      <header style={{ padding: "22px 20px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ margin: 0, fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em" }}>
-          ledger<span style={{ color: T.indigo }}>.</span>
-        </h1>
-        <span style={{ fontSize: 12, fontWeight: 500, color: T.faint, background: T.surface, border: `1px solid ${T.line}`, borderRadius: 999, padding: "6px 12px" }}>
-          {monthName(nowMonth)}
-        </span>
-      </header>
-
-      <main style={{ padding: "10px 16px 0", maxWidth: 560, margin: "0 auto", animation: "fadeIn 0.25s ease" }}>
-        {view === "dash" && <Dashboard data={data} nowMonth={nowMonth} />}
-        {view === "tx" && <Transactions data={data} delTx={delTx} />}
-        {view === "budget" && <Budget data={data} nowMonth={nowMonth} setBudget={setBudget} />}
-        {view === "goals" && <Goals data={data} delGoal={delGoal} openContrib={(id) => setSheet({ contrib: id })} openNew={() => setSheet("goal")} />}
-      </main>
-
-      {(view === "dash" || view === "tx") && (
-        <button
-          onClick={() => setSheet("tx")}
-          aria-label="Add transaction"
-          style={{
-            position: "fixed", right: 18, bottom: 88, width: 56, height: 56, borderRadius: 28,
-            background: GRAD, color: "#fff", border: "none", fontSize: 28, lineHeight: 1,
-            fontWeight: 300, cursor: "pointer", boxShadow: "0 8px 24px rgba(99,102,241,0.4)",
-          }}
-        >
-          +
-        </button>
-      )}
-
-      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "rgba(14,16,26,0.92)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderTop: `1px solid ${T.line}`, display: "flex" }}>
-        {[
-          ["dash", "Home", "◆"],
-          ["tx", "Activity", "≣"],
-          ["budget", "Budget", "◐"],
-          ["goals", "Goals", "◎"],
-        ].map(([k, label, icon]) => (
-          <button
-            key={k}
-            onClick={() => setView(k)}
-            style={{
-              flex: 1, padding: "12px 0 16px", background: "none", border: "none", cursor: "pointer",
-              color: view === k ? T.indigo : T.faint, transition: "color 0.15s",
-            }}
-          >
-            <div style={{ fontSize: 16, lineHeight: 1 }}>{icon}</div>
-            <div style={{ fontSize: 10.5, fontWeight: 600, marginTop: 5, letterSpacing: "0.02em" }}>{label}</div>
-          </button>
-        ))}
-      </nav>
-
-      {sheet === "tx" && <TxSheet close={() => setSheet(null)} addTx={addTx} />}
-      {sheet === "goal" && <GoalSheet close={() => setSheet(null)} addGoal={addGoal} />}
-      {sheet && sheet.contrib && (
-        <ContribSheet
-          goal={data.goals.find((g) => g.id === sheet.contrib)}
-          close={() => setSheet(null)}
-          contrib={(amt) => contribGoal(sheet.contrib, amt)}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ---------- shared bits ---------- */
-function SectionLabel({ children, right }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "24px 2px 12px" }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: T.dim, letterSpacing: "0.01em" }}>{children}</span>
-      {right}
-    </div>
-  );
-}
-
-function Card({ children, style }) {
-  return (
-    <div style={{ background: T.surface, border: `1px solid ${T.line}`, borderRadius: 16, padding: 16, ...style }}>
-      {children}
-    </div>
-  );
-}
-
-function Bar({ pct, color }) {
-  const mounted = useMounted();
-  return (
-    <div style={{ height: 6, background: T.raised, borderRadius: 3, overflow: "hidden" }}>
-      <div style={{ height: "100%", width: `${mounted ? Math.min(100, pct) : 0}%`, background: color, borderRadius: 3, transition: "width 0.8s cubic-bezier(0.22,1,0.36,1)" }} />
-    </div>
-  );
-}
-
-/* colored category chip — the color system that organizes every entry */
-function CatChip({ cat, size = 38 }) {
-  const c = catColor(cat);
-  return (
-    <div
-      style={{
-        width: size, height: size, borderRadius: size * 0.32, flexShrink: 0,
-        background: `${c}1f`, border: `1px solid ${c}40`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: c, fontWeight: 700, fontSize: size * 0.4, fontFamily: DISPLAY,
-      }}
-    >
-      {cat.charAt(0)}
-    </div>
-  );
-}
-
-function TxRow({ t, first, onClick, showBal }) {
-  return (
-    <div
-      onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 0", borderTop: first ? "none" : `1px solid ${T.lineSoft}`, cursor: onClick ? "pointer" : "default" }}
-    >
-      <CatChip cat={t.cat} />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {t.note || t.cat}
-        </div>
-        <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>
-          <span style={{ color: catColor(t.cat), fontWeight: 600 }}>{t.cat}</span>
-          <span> · {niceDate(t.date)}</span>
-        </div>
-      </div>
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600, ...NUM, color: t.type === "in" ? T.green : T.text }}>
-          {t.type === "in" ? "+" : "−"}{fmt(t.amount).replace("GH₵ ", "")}
-        </div>
-        {showBal && <div style={{ fontSize: 11, color: T.faint, marginTop: 2, ...NUM }}>bal {fmtShort(t.bal)}</div>}
-      </div>
-    </div>
-  );
-}
-
-/* ---------- dashboard ---------- */
-function Dashboard({ data, nowMonth }) {
-  const monthTx = data.tx.filter((t) => monthKey(t.date) === nowMonth);
-  const income = monthTx.filter((t) => t.type === "in").reduce((s, t) => s + t.amount, 0);
-  const spent = monthTx.filter((t) => t.type === "out").reduce((s, t) => s + t.amount, 0);
-
-  const allIn = data.tx.filter((t) => t.type === "in").reduce((s, t) => s + t.amount, 0);
-  const allOut = data.tx.filter((t) => t.type === "out").reduce((s, t) => s + t.amount, 0);
-  const balance = allIn - allOut;
-
-  const byCat = {};
-  monthTx.filter((t) => t.type === "out").forEach((t) => { byCat[t.cat] = (byCat[t.cat] || 0) + t.amount; });
-  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-  const catTotal = cats.reduce((s, [, v]) => s + v, 0);
-
-  const budgetTotal = Object.values(data.budgets).reduce((s, v) => s + Number(v || 0), 0);
-  const recent = [...data.tx].sort((a, b) => (a.date < b.date ? 1 : -1) || b.ts - a.ts).slice(0, 5);
-  const goalSaved = data.goals.reduce((s, g) => s + g.saved, 0);
-
-  const animBalance = useCountUp(balance);
-  const animIncome = useCountUp(income, 700);
-  const animSpent = useCountUp(spent, 700);
-
-  return (
-    <div>
-      {/* gradient balance card */}
-      <div
-        style={{
-          background: GRAD, borderRadius: 20, padding: "22px 20px",
-          boxShadow: "0 12px 36px rgba(79,70,229,0.35)", position: "relative", overflow: "hidden",
-        }}
-      >
-        <div style={{ position: "absolute", top: -60, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
-        <div style={{ position: "absolute", bottom: -80, left: -30, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-        <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-          Total balance
-        </div>
-        <div style={{ fontFamily: DISPLAY, fontSize: 36, fontWeight: 700, marginTop: 6, letterSpacing: "-0.02em", ...NUM }}>
-          {fmt(animBalance)}
-        </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-          {[
-            ["↓ In", animIncome, T.green],
-            ["↑ Out", animSpent, "#fda4af"],
-          ].map(([label, val, c]) => (
-            <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 12px", backdropFilter: "blur(4px)" }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>{label} this month</div>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 3, color: c, ...NUM }}>{fmtShort(val)}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {budgetTotal > 0 && (
-        <>
-          <SectionLabel>Monthly budget</SectionLabel>
-          <Card style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <Ring pct={(spent / budgetTotal) * 100} size={64} stroke={6} color={spent > budgetTotal ? T.red : T.indigo}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: spent > budgetTotal ? T.red : T.indigo, ...NUM }}>
-                {Math.min(999, Math.round((spent / budgetTotal) * 100))}%
-              </span>
-            </Ring>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, ...NUM, color: spent > budgetTotal ? T.red : T.text }}>{fmt(spent)}</div>
-              <div style={{ fontSize: 12.5, color: T.faint, marginTop: 3, ...NUM }}>of {fmt(budgetTotal)} budget</div>
-              <div style={{ fontSize: 12, marginTop: 5, fontWeight: 600, color: spent > budgetTotal ? T.red : T.green }}>
-                {spent > budgetTotal ? `${fmt(spent - budgetTotal)} over` : `${fmt(budgetTotal - spent)} remaining`}
-              </div>
-            </div>
-          </Card>
-        </>
-      )}
-
-      {cats.length > 0 && (
-        <>
-          <SectionLabel>Spending by category</SectionLabel>
-          <Card>
-            {/* stacked color band — the month at a glance */}
-            <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden", gap: 2 }}>
-              {cats.map(([cat, amt]) => (
-                <div key={cat} style={{ width: `${(amt / catTotal) * 100}%`, background: catColor(cat), minWidth: 3 }} />
-              ))}
-            </div>
-            <div style={{ marginTop: 14 }}>
-              {cats.slice(0, 5).map(([cat, amt]) => (
-                <div key={cat} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 0" }}>
-                  <span style={{ width: 9, height: 9, borderRadius: 3, background: catColor(cat), flexShrink: 0 }} />
-                  <span style={{ fontSize: 13.5, color: T.dim, flex: 1 }}>{cat}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, ...NUM }}>{fmtShort(amt)}</span>
-                  <span style={{ fontSize: 11.5, color: T.faint, width: 34, textAlign: "right", ...NUM }}>{Math.round((amt / catTotal) * 100)}%</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </>
-      )}
-
-      {data.goals.length > 0 && (
-        <>
-          <SectionLabel>Goals</SectionLabel>
-          <Card style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 13.5, color: T.dim }}>{data.goals.length} goal{data.goals.length > 1 ? "s" : ""} in progress</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: T.green, ...NUM }}>{fmtShort(goalSaved)} saved</span>
-          </Card>
-        </>
-      )}
-
-      <SectionLabel>Recent activity</SectionLabel>
-      {recent.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: 30 }}>
-          <div style={{ fontFamily: DISPLAY, fontSize: 16, fontWeight: 600, color: T.dim }}>No activity yet</div>
-          <div style={{ fontSize: 13, color: T.faint, marginTop: 6 }}>Tap + to record your first transaction.</div>
-        </Card>
-      ) : (
-        <Card style={{ padding: "3px 16px" }}>
-          {recent.map((t, i) => <TxRow key={t.id} t={t} first={i === 0} />)}
-        </Card>
-      )}
-    </div>
-  );
-}
-
-/* ---------- transactions ---------- */
-function Transactions({ data, delTx }) {
-  const [confirm, setConfirm] = useState(null);
-  const [filter, setFilter] = useState(null); // category filter — tap a chip to isolate a color
-
-  const sorted = useMemo(
-    () => [...data.tx].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.ts - b.ts)),
-    [data.tx]
-  );
-
-  let run = 0;
-  const withBal = sorted.map((t) => {
-    run += t.type === "in" ? t.amount : -t.amount;
-    return { ...t, bal: run };
+    });
+    h += '</div>';
   });
+  return h;
+}
+function fpill(active, color, label, val){
+  return '<button class="fpill" data-act="filter" data-val="'+esc(val)+'" style="'
+    + (active ? 'background:'+color+'1f;border-color:'+color+'60;color:'+color : '')
+    + '"><span class="dot" style="background:'+color+'"></span>'+esc(label)+'</button>';
+}
 
-  const activeCats = [...new Set(withBal.map((t) => t.cat))];
-  const visible = filter ? withBal.filter((t) => t.cat === filter) : withBal;
+function budgetView(){
+  var nm = mKey(todayISO());
+  var spent = spentByCat(nm);
+  var totalSpent = 0; for (var k in spent) totalSpent += spent[k];
+  var bt = budgetTotal();
+  var over = bt>0 && totalSpent>bt;
+  var pct = bt>0 ? totalSpent/bt*100 : 0;
 
-  const months = {};
-  visible.forEach((t) => {
-    const k = monthKey(t.date);
-    (months[k] = months[k] || []).push(t);
+  var h = '<div class="card" style="background:linear-gradient(135deg,var(--surface) 0%,#171a2e 100%);display:flex;align-items:center;gap:18px">'
+    + ring(pct, 92, 8, over?"var(--red)":"var(--indigo)",
+        '<div><div class="num" style="font-size:17px;font-weight:700;color:'+(over?'var(--red)':'var(--text)')+'">'+(bt>0?Math.min(999,Math.round(pct))+'%':'\u2014')+'</div><div style="font-size:9.5px;color:var(--faint);font-weight:600;letter-spacing:.04em">USED</div></div>')
+    + '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--faint);letter-spacing:.05em;text-transform:uppercase">Spent this month</div>'
+    + '<div class="disp num" style="font-size:22px;margin-top:4px;color:'+(over?'var(--red)':'var(--text)')+'">'+fmt(totalSpent)+'</div>'
+    + '<div class="num" style="font-size:12.5px;color:var(--faint);margin-top:3px">'+(bt>0?'of '+fmt(bt)+' budget':'no budget set')+'</div></div></div>';
+
+  h += '<div class="sec"><span>Category limits</span></div>';
+  CATS_OUT.forEach(function(cat){
+    var b = Number(S.budgets[cat]||0), s = spent[cat]||0;
+    var catOver = b>0 && s>b;
+    var c = cc(cat);
+    var rp = b>0 ? s/b*100 : 0;
+    h += '<div class="card" style="margin-bottom:10px;padding:13px 16px"><div style="display:flex;align-items:center;gap:13px">'
+      + ring(rp, 46, 4.5, catOver?"var(--red)":c,
+          '<span class="num" style="font-size:10.5px;font-weight:700;color:'+(catOver?'var(--red)':c)+'">'+(b>0?Math.min(99,Math.round(rp))+(s>b?'+':'')+'%':'\u00B7')+'</span>')
+      + '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">'+esc(cat)+'</div>'
+      + (b>0 ? '<div class="num" style="font-size:11.5px;margin-top:3px;color:'+(catOver?'var(--red)':'var(--faint)')+'">'+bare(s)+' \u00B7 '+(catOver?'over by '+bare(s-b):bare(b-s)+' left')+'</div>' : '')
+      + '</div><div style="display:flex;align-items:center;gap:6px">'
+      + '<span style="font-size:11.5px;color:var(--faint)">GH\u20B5</span>'
+      + '<input type="number" inputmode="numeric" placeholder="0" class="num budget-in" data-cat="'+esc(cat)+'" value="'+(S.budgets[cat]!=null?esc(S.budgets[cat]):'')+'" style="width:78px;background:var(--raised);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:13.5px;font-weight:500;padding:8px 9px;text-align:right">'
+      + '</div></div></div>';
   });
-  const monthKeys = Object.keys(months).sort().reverse();
-
-  if (sorted.length === 0)
-    return (
-      <Card style={{ textAlign: "center", padding: 34 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 600, color: T.dim }}>No transactions yet</div>
-        <div style={{ fontSize: 13, color: T.faint, marginTop: 6 }}>Everything you record shows up here, organized by category color.</div>
-      </Card>
-    );
-
-  return (
-    <div>
-      {/* color filter rail */}
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 4, WebkitOverflowScrolling: "touch" }}>
-        <FilterPill active={!filter} color={T.indigo} label="All" onClick={() => setFilter(null)} />
-        {activeCats.map((c) => (
-          <FilterPill key={c} active={filter === c} color={catColor(c)} label={c} onClick={() => setFilter(filter === c ? null : c)} />
-        ))}
-      </div>
-
-      {monthKeys.map((mk) => {
-        const rows = [...months[mk]].reverse();
-        const mIn = months[mk].filter((t) => t.type === "in").reduce((s, t) => s + t.amount, 0);
-        const mOut = months[mk].filter((t) => t.type === "out").reduce((s, t) => s + t.amount, 0);
-        return (
-          <div key={mk} style={{ marginBottom: 8 }}>
-            <SectionLabel
-              right={
-                <span style={{ fontSize: 12, ...NUM }}>
-                  <span style={{ color: T.green }}>+{fmtShort(mIn).replace("GH₵ ", "")}</span>
-                  <span style={{ color: T.faint }}> / </span>
-                  <span style={{ color: T.red }}>−{fmtShort(mOut).replace("GH₵ ", "")}</span>
-                </span>
-              }
-            >
-              {monthName(mk)}
-            </SectionLabel>
-            <Card style={{ padding: "3px 16px" }}>
-              {rows.map((t, i) => (
-                <div key={t.id}>
-                  <TxRow t={t} first={i === 0} showBal={!filter} onClick={() => setConfirm(confirm === t.id ? null : t.id)} />
-                  {confirm === t.id && (
-                    <button
-                      onClick={() => { delTx(t.id); setConfirm(null); }}
-                      style={{ margin: "0 0 12px 50px", background: `${T.red}14`, border: `1px solid ${T.red}50`, color: T.red, borderRadius: 8, padding: "6px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
-                    >
-                      Delete transaction
-                    </button>
-                  )}
-                </div>
-              ))}
-            </Card>
-          </div>
-        );
-      })}
-    </div>
-  );
+  return h;
 }
 
-function FilterPill({ active, color, label, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
-        background: active ? `${color}1f` : T.surface,
-        border: `1px solid ${active ? `${color}60` : T.line}`,
-        color: active ? color : T.dim,
-        borderRadius: 999, padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
-        transition: "all 0.15s",
-      }}
-    >
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />
-      {label}
-    </button>
-  );
-}
-
-/* ---------- budget ---------- */
-function Budget({ data, nowMonth, setBudget }) {
-  const monthOut = data.tx.filter((t) => t.type === "out" && monthKey(t.date) === nowMonth);
-  const spentBy = {};
-  monthOut.forEach((t) => { spentBy[t.cat] = (spentBy[t.cat] || 0) + t.amount; });
-
-  const totalBudget = EXPENSE_CATS.reduce((s, c) => s + Number(data.budgets[c] || 0), 0);
-  const totalSpent = Object.values(spentBy).reduce((s, v) => s + v, 0);
-  const over = totalBudget > 0 && totalSpent > totalBudget;
-  const animSpentTotal = useCountUp(totalSpent, 700);
-
-  return (
-    <div>
-      <Card style={{ background: `linear-gradient(135deg, ${T.surface} 0%, #171a2e 100%)`, display: "flex", alignItems: "center", gap: 18 }}>
-        <Ring pct={totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0} size={92} stroke={8} color={over ? T.red : T.indigo}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: over ? T.red : T.text, ...NUM }}>
-              {totalBudget > 0 ? Math.min(999, Math.round((totalSpent / totalBudget) * 100)) + "%" : "—"}
-            </div>
-            <div style={{ fontSize: 9.5, color: T.faint, fontWeight: 600, letterSpacing: "0.04em" }}>USED</div>
-          </div>
-        </Ring>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: T.faint, letterSpacing: "0.05em", textTransform: "uppercase" }}>Spent this month</div>
-          <div style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 700, marginTop: 4, color: over ? T.red : T.text, ...NUM }}>{fmt(animSpentTotal)}</div>
-          <div style={{ fontSize: 12.5, color: T.faint, marginTop: 3, ...NUM }}>
-            {totalBudget > 0 ? `of ${fmt(totalBudget)} budget` : "no budget set"}
-          </div>
-        </div>
-      </Card>
-
-      <SectionLabel>Category limits</SectionLabel>
-      {EXPENSE_CATS.map((cat) => {
-        const b = Number(data.budgets[cat] || 0);
-        const s = spentBy[cat] || 0;
-        const catOver = b > 0 && s > b;
-        const c = catColor(cat);
-        return (
-          <Card key={cat} style={{ marginBottom: 10, padding: "13px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-              <Ring pct={b > 0 ? (s / b) * 100 : 0} size={46} stroke={4.5} color={catOver ? T.red : c}>
-                <span style={{ fontSize: 10.5, fontWeight: 700, color: catOver ? T.red : c, ...NUM }}>
-                  {b > 0 ? Math.min(99, Math.round((s / b) * 100)) + (s > b ? "+" : "") + "%" : "·"}
-                </span>
-              </Ring>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{cat}</div>
-                {b > 0 && (
-                  <div style={{ fontSize: 11.5, marginTop: 3, ...NUM, color: catOver ? T.red : T.faint }}>
-                    {fmt(s).replace("GH₵ ", "")} · {catOver ? `over by ${fmt(s - b).replace("GH₵ ", "")}` : `${fmt(b - s).replace("GH₵ ", "")} left`}
-                  </div>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 11.5, color: T.faint }}>GH₵</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={data.budgets[cat] ?? ""}
-                  onChange={(e) => setBudget(cat, e.target.value)}
-                  style={{
-                    width: 78, background: T.raised, border: `1px solid ${T.line}`, borderRadius: 8,
-                    color: T.text, fontSize: 13.5, fontWeight: 500, padding: "8px 9px", textAlign: "right", ...NUM,
-                  }}
-                />
-              </div>
-            </div>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ---------- goals ---------- */
-function Goals({ data, delGoal, openContrib, openNew }) {
-  const [confirm, setConfirm] = useState(null);
-  return (
-    <div>
-      {data.goals.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: 34 }}>
-          <div style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 600, color: T.dim }}>No goals yet</div>
-          <div style={{ fontSize: 13, color: T.faint, marginTop: 6 }}>Set a target and put money against it.</div>
-        </Card>
-      ) : (
-        data.goals.map((g) => {
-          const pct = g.target > 0 ? (g.saved / g.target) * 100 : 0;
-          const done = g.saved >= g.target;
-          return (
-            <Card key={g.id} style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontFamily: DISPLAY, fontSize: 17, fontWeight: 600 }}>{g.name}</span>
-                <span style={{ fontSize: 12.5, fontWeight: 600, color: done ? T.green : T.indigo, ...NUM }}>
-                  {done ? "Reached ✓" : `${Math.floor(pct)}%`}
-                </span>
-              </div>
-              <div style={{ marginTop: 13 }}>
-                <Bar pct={pct} color={done ? T.green : T.indigo} />
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginTop: 8, ...NUM }}>
-                <span style={{ color: T.green, fontWeight: 600 }}>{fmt(g.saved)}</span>
-                <span style={{ color: T.faint }}>of {fmt(g.target)}</span>
-              </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                <button
-                  onClick={() => openContrib(g.id)}
-                  style={{ flex: 1, background: `${T.indigo}1a`, border: `1px solid ${T.indigo}50`, color: T.indigo, borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Add money
-                </button>
-                <button
-                  onClick={() => setConfirm(confirm === g.id ? null : g.id)}
-                  aria-label="More options"
-                  style={{ background: "none", border: `1px solid ${T.line}`, color: T.faint, borderRadius: 10, padding: "10px 16px", fontSize: 13, cursor: "pointer" }}
-                >
-                  ···
-                </button>
-              </div>
-              {confirm === g.id && (
-                <button
-                  onClick={() => { delGoal(g.id); setConfirm(null); }}
-                  style={{ marginTop: 10, width: "100%", background: `${T.red}14`, border: `1px solid ${T.red}50`, color: T.red, borderRadius: 10, padding: "9px 0", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Delete goal
-                </button>
-              )}
-            </Card>
-          );
-        })
-      )}
-
-      <button
-        onClick={openNew}
-        style={{ width: "100%", marginTop: 8, background: GRAD, border: "none", color: "#fff", borderRadius: 12, padding: "14px 0", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em", cursor: "pointer", boxShadow: "0 6px 20px rgba(99,102,241,0.3)" }}
-      >
-        New goal
-      </button>
-    </div>
-  );
+function goalsView(){
+  var h = '';
+  if (!S.goals.length){
+    h += '<div class="card empty"><div class="e1">No goals yet</div><div class="e2">Set a target and put money against it.</div></div>';
+  } else {
+    S.goals.forEach(function(g){
+      var pct = g.target>0 ? g.saved/g.target*100 : 0;
+      var done = g.saved >= g.target;
+      h += '<div class="card goal-card"><div class="goal-head"><span class="goal-name">'+esc(g.name)+'</span>'
+        + '<span class="num" style="font-size:12.5px;font-weight:600;color:'+(done?'var(--green)':'var(--indigo)')+'">'+(done?'Reached \u2713':Math.floor(pct)+'%')+'</span></div>'
+        + '<div style="margin-top:13px"><div class="bar"><div data-target="'+Math.min(100,pct)+'" style="background:'+(done?'var(--green)':'var(--indigo)')+'"></div></div></div>'
+        + '<div class="num" style="display:flex;justify-content:space-between;font-size:12.5px;margin-top:8px">'
+        + '<span style="color:var(--green);font-weight:600">'+fmt(g.saved)+'</span>'
+        + '<span style="color:var(--faint)">of '+fmt(g.target)+'</span></div>'
+        + '<div class="goal-actions">'
+        + '<button class="goal-add" data-act="contrib" data-id="'+g.id+'">Add money</button>'
+        + '<button class="goal-more" data-act="goalmore" data-id="'+g.id+'">\u00B7\u00B7\u00B7</button></div>'
+        + (goalConfirm===g.id ? '<button class="goal-del" data-act="delgoal" data-id="'+g.id+'">Delete goal</button>' : '')
+        + '</div>';
+    });
+  }
+  h += '<button class="primary" style="margin-top:8px" data-act="newgoal">New goal</button>';
+  return h;
 }
 
 /* ---------- sheets ---------- */
-function Sheet({ title, close, children }) {
-  return (
-    <div
-      onClick={close}
-      style={{ position: "fixed", inset: 0, background: "rgba(4,5,12,0.75)", zIndex: 40, display: "flex", alignItems: "flex-end", justifyContent: "center", backdropFilter: "blur(3px)" }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%", maxWidth: 560, background: T.surface, border: `1px solid ${T.line}`, borderBottom: "none",
-          borderRadius: "20px 20px 0 0", padding: "18px 20px 32px", animation: "sheetUp 0.22s ease",
-        }}
-      >
-        <div style={{ width: 40, height: 4, borderRadius: 2, background: T.line, margin: "0 auto 16px" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <span style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 600 }}>{title}</span>
-          <button onClick={close} aria-label="Close" style={{ background: T.raised, border: "none", color: T.dim, width: 30, height: 30, borderRadius: 15, fontSize: 16, cursor: "pointer", lineHeight: 1 }}>×</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
+function sheetHtml(){
+  if (!sheet) return '';
+  var inner = '';
+  if (sheet === "tx") inner = txSheet();
+  else if (sheet === "goal") inner = goalSheet();
+  else if (sheet.contrib) inner = contribSheet(sheet.contrib);
+  if (!inner) return '';
+  return '<div class="overlay" data-act="closeover">'
+    + '<div class="sheet" data-stop="1"><div class="handle"></div>' + inner + '</div></div>';
+}
+function txSheet(){
+  var d = draft || { type:"out", amount:"", cat:CATS_OUT[0], note:"", date:todayISO() };
+  var cats = d.type==="in" ? CATS_IN : CATS_OUT;
+  if (cats.indexOf(d.cat)<0) d.cat = cats[0];
+  var h = '<div class="sheet-head"><span class="ti">New transaction</span><button class="x" data-act="closesheet">\u00D7</button></div>';
+  h += '<div class="seg">'
+    + '<button data-act="txtype" data-val="out" style="'+(d.type==="out"?'background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.38);color:var(--red)':'')+'">Money out</button>'
+    + '<button data-act="txtype" data-val="in" style="'+(d.type==="in"?'background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.38);color:var(--green)':'')+'">Money in</button></div>';
+  h += '<input id="f-amount" class="inp big num" type="number" inputmode="decimal" placeholder="Amount (GH\u20B5)" value="'+esc(d.amount)+'">';
+  h += '<div class="catpick">';
+  cats.forEach(function(c){
+    var col = cc(c), on = d.cat===c;
+    h += '<button class="fpill" data-act="pickcat" data-val="'+esc(c)+'" style="'+(on?'background:'+col+'1f;border-color:'+col+'60;color:'+col:'background:var(--raised)')+'"><span class="dot" style="background:'+col+'"></span>'+esc(c)+'</button>';
+  });
+  h += '</div>';
+  h += '<input id="f-note" class="inp" type="text" placeholder="Note (optional)" value="'+esc(d.note)+'">';
+  h += '<input id="f-date" class="inp" type="date" value="'+esc(d.date)+'" style="color-scheme:dark">';
+  h += '<button class="primary" data-act="savetx" style="margin-top:4px">Save transaction</button>';
+  return h;
+}
+function goalSheet(){
+  return '<div class="sheet-head"><span class="ti">New goal</span><button class="x" data-act="closesheet">\u00D7</button></div>'
+    + '<input id="g-name" class="inp" type="text" placeholder="What are you saving for?">'
+    + '<input id="g-target" class="inp big num" type="number" inputmode="decimal" placeholder="Target (GH\u20B5)">'
+    + '<button class="primary" data-act="savegoal" style="margin-top:4px">Create goal</button>';
+}
+function contribSheet(id){
+  var g = null;
+  for (var i=0;i<S.goals.length;i++) if (S.goals[i].id===id) g=S.goals[i];
+  if (!g) return '';
+  return '<div class="sheet-head"><span class="ti">'+esc(g.name)+'</span><button class="x" data-act="closesheet">\u00D7</button></div>'
+    + '<div class="num" style="font-size:12.5px;color:var(--faint);margin-bottom:12px">'+fmt(g.saved)+' of '+fmt(g.target)+' so far</div>'
+    + '<input id="c-amount" class="inp big num" type="number" inputmode="decimal" placeholder="Amount (GH\u20B5)">'
+    + '<div style="display:flex;gap:8px">'
+    + '<button class="primary" style="flex:1;padding:14px 0;font-size:13.5px" data-act="docontrib" data-sign="1" data-id="'+g.id+'">Add money</button>'
+    + '<button class="ghost" style="flex:1" data-act="docontrib" data-sign="-1" data-id="'+g.id+'">Withdraw</button></div>';
 }
 
-const inputStyle = {
-  width: "100%", background: "#191c2b", border: "1px solid #232738", borderRadius: 10,
-  color: "#eef0f6", fontSize: 15, padding: "13px 13px", marginBottom: 12,
-};
-
-function TxSheet({ close, addTx }) {
-  const [type, setType] = useState("out");
-  const [amount, setAmount] = useState("");
-  const [cat, setCat] = useState(EXPENSE_CATS[0]);
-  const [note, setNote] = useState("");
-  const [date, setDate] = useState(todayISO());
-  const cats = type === "in" ? INCOME_CATS : EXPENSE_CATS;
-  const valid = parseFloat(amount) > 0;
-
-  const save = () => {
-    if (!valid) return;
-    addTx({ id: uid(), type, amount: parseFloat(amount), cat: cats.includes(cat) ? cat : cats[0], note: note.trim(), date, ts: Date.now() });
-    close();
-  };
-
-  return (
-    <Sheet title="New transaction" close={close}>
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        {[["out", "Money out", T.red], ["in", "Money in", T.green]].map(([k, label, c]) => (
-          <button
-            key={k}
-            onClick={() => { setType(k); setCat((k === "in" ? INCOME_CATS : EXPENSE_CATS)[0]); }}
-            style={{
-              flex: 1, padding: "12px 0", borderRadius: 10, cursor: "pointer", fontSize: 13.5, fontWeight: 600,
-              background: type === k ? `${c}1a` : "none",
-              border: `1px solid ${type === k ? `${c}60` : T.line}`,
-              color: type === k ? c : T.dim, transition: "all 0.15s",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <input type="number" inputMode="decimal" placeholder="Amount (GH₵)" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ ...inputStyle, fontSize: 19, fontWeight: 600, ...NUM }} autoFocus />
-
-      {/* color-coded category picker */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-        {cats.map((c) => {
-          const col = catColor(c);
-          const active = cat === c;
-          return (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: active ? `${col}1f` : T.raised,
-                border: `1px solid ${active ? `${col}60` : T.line}`,
-                color: active ? col : T.dim,
-                borderRadius: 999, padding: "8px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
-              }}
-            >
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: col }} />
-              {c}
-            </button>
-          );
-        })}
-      </div>
-
-      <input type="text" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle} />
-      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...inputStyle, colorScheme: "dark" }} />
-      <button
-        onClick={save}
-        disabled={!valid}
-        style={{ width: "100%", background: valid ? GRAD : T.raised, border: "none", color: valid ? "#fff" : T.faint, borderRadius: 12, padding: "15px 0", fontSize: 14.5, fontWeight: 700, cursor: valid ? "pointer" : "default", marginTop: 4, boxShadow: valid ? "0 6px 20px rgba(99,102,241,0.3)" : "none" }}
-      >
-        Save transaction
-      </button>
-    </Sheet>
-  );
+/* ---------- shell ---------- */
+function navHtml(){
+  var items = [["dash","\u25C6","Home"],["tx","\u2263","Activity"],["budget","\u25D0","Budget"],["goals","\u25CE","Goals"]];
+  var h = '<nav>';
+  items.forEach(function(it){
+    h += '<button data-act="nav" data-val="'+it[0]+'" class="'+(view===it[0]?'on':'')+'"><div class="ic">'+it[1]+'</div><div class="nl">'+it[2]+'</div></button>';
+  });
+  return h + '</nav>';
+}
+function render(){
+  var nm = mKey(todayISO());
+  var h = '<header><h1>ledger<span>.</span></h1><span class="month-pill">'+mName(nm)+'</span></header><main>';
+  if (view==="dash") h += dashView();
+  else if (view==="tx") h += txView();
+  else if (view==="budget") h += budgetView();
+  else h += goalsView();
+  h += '</main>';
+  if (view==="dash" || view==="tx") h += '<button class="fab" data-act="opentx" aria-label="Add transaction">+</button>';
+  h += navHtml() + sheetHtml();
+  document.getElementById("app").innerHTML = h;
+  bindInputs();
+  animate();
 }
 
-function GoalSheet({ close, addGoal }) {
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState("");
-  const valid = name.trim() && parseFloat(target) > 0;
-  const save = () => {
-    if (!valid) return;
-    addGoal({ id: uid(), name: name.trim(), target: parseFloat(target), saved: 0 });
-    close();
-  };
-  return (
-    <Sheet title="New goal" close={close}>
-      <input type="text" placeholder="What are you saving for?" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} autoFocus />
-      <input type="number" inputMode="decimal" placeholder="Target (GH₵)" value={target} onChange={(e) => setTarget(e.target.value)} style={{ ...inputStyle, fontSize: 19, fontWeight: 600, ...NUM }} />
-      <button
-        onClick={save}
-        disabled={!valid}
-        style={{ width: "100%", background: valid ? GRAD : T.raised, border: "none", color: valid ? "#fff" : T.faint, borderRadius: 12, padding: "15px 0", fontSize: 14.5, fontWeight: 700, cursor: valid ? "pointer" : "default", marginTop: 4 }}
-      >
-        Create goal
-      </button>
-    </Sheet>
-  );
+/* ---------- animation ---------- */
+function animate(){
+  /* rings + bars sweep in */
+  requestAnimationFrame(function(){
+    var fgs = document.querySelectorAll("circle.fg");
+    for (var i=0;i<fgs.length;i++){
+      var el = fgs[i];
+      if (reduced()) el.style.transition = "none";
+      el.setAttribute("stroke-dashoffset", el.getAttribute("data-target"));
+    }
+    var bars = document.querySelectorAll(".bar>div[data-target]");
+    for (var j=0;j<bars.length;j++) bars[j].style.width = bars[j].getAttribute("data-target") + "%";
+  });
+  /* balance count-up */
+  var b = document.getElementById("balNum");
+  if (b){
+    var from = Number(b.getAttribute("data-from")), to = Number(b.getAttribute("data-to"));
+    if (reduced() || from === to){ b.textContent = fmt(to); return; }
+    var start = performance.now(), dur = 900;
+    (function tick(now){
+      var p = Math.min(1,(now-start)/dur);
+      var e = 1 - Math.pow(1-p,3);
+      b.textContent = fmt(from + (to-from)*e);
+      if (p<1) requestAnimationFrame(tick);
+    })(start);
+  }
 }
 
-function ContribSheet({ goal, close, contrib }) {
-  const [amount, setAmount] = useState("");
-  if (!goal) return null;
-  const valid = parseFloat(amount) > 0;
-  const save = (sign) => {
-    if (!valid) return;
-    contrib(sign * parseFloat(amount));
-    close();
-  };
-  return (
-    <Sheet title={goal.name} close={close}>
-      <div style={{ fontSize: 12.5, color: T.faint, marginBottom: 12, ...NUM }}>
-        {fmt(goal.saved)} of {fmt(goal.target)} so far
-      </div>
-      <input type="number" inputMode="decimal" placeholder="Amount (GH₵)" value={amount} onChange={(e) => setAmount(e.target.value)} style={{ ...inputStyle, fontSize: 19, fontWeight: 600, ...NUM }} autoFocus />
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          onClick={() => save(1)}
-          disabled={!valid}
-          style={{ flex: 1, background: valid ? GRAD : T.raised, border: "none", color: valid ? "#fff" : T.faint, borderRadius: 12, padding: "14px 0", fontSize: 13.5, fontWeight: 700, cursor: valid ? "pointer" : "default" }}
-        >
-          Add money
-        </button>
-        <button
-          onClick={() => save(-1)}
-          disabled={!valid}
-          style={{ flex: 1, background: "none", border: `1px solid ${T.line}`, color: T.dim, borderRadius: 12, padding: "14px 0", fontSize: 13.5, fontWeight: 600, cursor: valid ? "pointer" : "default" }}
-        >
-          Withdraw
-        </button>
-      </div>
-    </Sheet>
-  );
+/* ---------- events ---------- */
+function captureDraft(){
+  var a = document.getElementById("f-amount");
+  if (!a) return;
+  draft = draft || { type:"out", amount:"", cat:CATS_OUT[0], note:"", date:todayISO() };
+  draft.amount = a.value;
+  draft.note = document.getElementById("f-note").value;
+  draft.date = document.getElementById("f-date").value || todayISO();
 }
+document.getElementById("app").addEventListener("click", function(ev){
+  var el = ev.target;
+  while (el && el !== this && !el.getAttribute("data-act") && !el.getAttribute("data-stop")) el = el.parentNode;
+  if (!el || el === this) return;
+  if (el.getAttribute("data-stop")) return;           /* clicks inside the sheet don't close it */
+  var act = el.getAttribute("data-act");
+  var val = el.getAttribute("data-val");
+  var id = el.getAttribute("data-id");
 
-
-ReactDOM.createRoot(document.getElementById("root")).render(<Ledger />);
-</script>
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
+  if (act==="nav"){ view=val; confirmId=null; goalConfirm=null; render(); }
+  else if (act==="opentx"){ draft=null; sheet="tx"; render(); var f=document.getElementById("f-amount"); if(f) f.focus(); }
+  else if (act==="newgoal"){ sheet="goal"; render(); var g=document.getElementById("g-name"); if(g) g.focus(); }
+  else if (act==="contrib"){ sheet={contrib:id}; render(); var c=document.getElementById("c-amount"); if(c) c.focus(); }
+  else if (act==="closesheet" || act==="closeover"){ sheet=null; draft=null; render(); }
+  else if (act==="txtype"){ captureDraft(); draft.type=val; var cats=val==="in"?CATS_IN:CATS_OUT; draft.cat=cats[0]; render(); }
+  else if (act==="pickcat"){ captureDraft(); draft.cat=val; render(); }
+  else if (act==="filter"){ filter = val || null; if (filter===val && el.style.color && val==="") filter=null; confirmId=null; render(); }
+  else if (act==="confirm"){ confirmId = (confirmId===id?null:id); render(); }
+  else if (act==="deltx"){
+    S.tx = S.tx.filter(function(t){return t.id!==id;});
+    confirmId=null; persist(); render();
+  }
+  else if (act==="goalmore"){ goalConfirm = (goalConfirm===id?null:id); render(); }
+  else if (act==="delgoal"){
+    S.goals = S.goals.filter(function(g){return g.id!==id;});
+    goalConfirm=null; persist(); render();
+  }
+  else if (act==="savetx"){
+    captureDraft();
+    var amt = parseFloat(draft.amount);
+    if (!amt || amt<=0) return;
+    S.tx.push({ id:uid(), type:draft.type, amount:amt, cat:draft.cat, note:(draft.note||"").trim(), date:draft.date, ts:Date.now() });
+    sheet=null; draft=null; persist(); render();
+  }
+  else if (act==="savegoal"){
+    var name = document.getElementById("g-name").value.trim();
+    var tgt = parseFloat(document.getElementById("g-target").value);
+    if (!name || !tgt || tgt<=0) return;
+    S.goals.push({ id:uid(), name:name, target:tgt, saved:0 });
+    sheet=null; persist(); render();
+  }
+  else if (act==="docontrib"){
+    var ca = parseFloat(document.getElementById("c-amount").value);
+    if (!ca || ca<=0) return;
+    var sign = Number(el.getAttribute("data-sign"));
+    for (var i=0;i<S.goals.length;i++){
+      if (S.goals[i].id===id) S.goals[i].saved = Math.max(0, S.goals[i].saved + sign*ca);
+    }
+    sheet=null; persist(); render();
+  }
+});
+function bindInputs(){
+  var ins = document.querySelectorAll(".budget-in");
+  for (var i=0;i<ins.length;i++){
+    ins[i].addEventListener("change", function(){
+      S.budgets[this.getAttribute("data-cat")] = this.value;
+      persist(); render();
     });
   }
+}
+
+render();
+
+/* offline support */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
